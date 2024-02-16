@@ -932,7 +932,7 @@ int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline) {
     g_object_set(G_OBJECT (source),
                  "location", data->rtsp_url.c_str(),
                  "short-header", true, // Necessary for target camera
-                 "protocols", GST_RTSP_LOWER_TRANS_TCP
+                 "protocols", GST_RTSP_LOWER_TRANS_TCP,
                  NULL);
 
     g_signal_connect(source, "pad-added", G_CALLBACK(pad_added_cb), depay);
