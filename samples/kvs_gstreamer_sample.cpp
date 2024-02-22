@@ -51,7 +51,7 @@ LOGGER_TAG("com.amazonaws.kinesis.video.gstreamer");
 #define DEFAULT_CREDENTIAL_ROTATION_SECONDS 3600
 #define DEFAULT_CREDENTIAL_EXPIRATION_SECONDS 180
 
-#define ENCODING_MODE_ARG_INDEX 2
+#define ENCODING_MODE_ARG_INDEX 3
 #define ENCODING_MODE_CPU "CPU"
 #define ENCODING_MODE_COPY "COPY"
 
@@ -905,7 +905,7 @@ int gstreamer_live_source_init(int argc, char* argv[], CustomData *data, GstElem
     return 0;
 }
 
-int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline, std::string encoding_mode) {
+int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline, const std::string& encoding_mode) {
 
     GstElement *filter, *appsink, *depay, *source, *h264parse;
 
@@ -915,8 +915,10 @@ int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline, std::stri
     source = gst_element_factory_make("rtspsrc", "source");
 
     if (encoding_mode == ENCODING_MODE_CPU) {
+        LOG_INFO("CPU mode selected!");
         h264parse = gst_element_factory_make("h264parse", "h264parse");
     } else if (encoding_mode == ENCODING_MODE_COPY) {
+        LOG_INFO("COPY mode selected!");
         h264parse = gst_element_factory_make("identity", "identity");
     }
 
@@ -1057,7 +1059,12 @@ int gstreamer_init(int argc, char* argv[], CustomData *data) {
         case RTSP_SOURCE:
             LOG_INFO("Streaming from rtsp source");
             pipeline = gst_pipeline_new("rtsp-kinesis-pipeline");
-            ret = gstreamer_rtsp_source_init(data, pipeline, string(argv[ENCODING_MODE_ARG_INDEX]));
+
+            LOG_INFO("Assigning the encoding param...");
+            std::string encoding_param = argv[ENCODING_MODE_ARG_INDEX];
+            LOG_INFO("Encoding param value:" >> encoding_param);
+
+            ret = gstreamer_rtsp_source_init(data, pipeline, argv[ENCODING_MODE_ARG_INDEX]);
             break;
         case FILE_SOURCE:
             LOG_INFO("Streaming from file source");
