@@ -51,6 +51,10 @@ LOGGER_TAG("com.amazonaws.kinesis.video.gstreamer");
 #define DEFAULT_CREDENTIAL_ROTATION_SECONDS 3600
 #define DEFAULT_CREDENTIAL_EXPIRATION_SECONDS 180
 
+#define ENCODING_MODE_ARG_INDEX 2
+#define ENCODING_MODE_CPU "CPU"
+#define ENCODING_MODE_COPY "COPY"
+
 typedef enum _StreamSource {
     FILE_SOURCE,
     LIVE_SOURCE,
@@ -901,7 +905,7 @@ int gstreamer_live_source_init(int argc, char* argv[], CustomData *data, GstElem
     return 0;
 }
 
-int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline) {
+int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline, std::string encoding_mode) {
 
     GstElement *filter, *appsink, *depay, *source, *h264parse;
 
@@ -909,7 +913,12 @@ int gstreamer_rtsp_source_init(CustomData *data, GstElement *pipeline) {
     appsink = gst_element_factory_make("appsink", "appsink");
     depay = gst_element_factory_make("rtph264depay", "depay");
     source = gst_element_factory_make("rtspsrc", "source");
-    h264parse = gst_element_factory_make("h264parse", "h264parse");
+
+    if (encoding_mode == ENCODING_MODE_CPU) {
+        h264parse = gst_element_factory_make("h264parse", "h264parse");
+    } else if (encoding_mode == ENCODING_MODE_COPY) {
+        h264parse = gst_element_factory_make("identity", "identity");
+    }
 
     if (!pipeline || !source || !depay || !appsink || !filter || !h264parse) {
         g_printerr("Not all elements could be created.\n");
@@ -1048,7 +1057,7 @@ int gstreamer_init(int argc, char* argv[], CustomData *data) {
         case RTSP_SOURCE:
             LOG_INFO("Streaming from rtsp source");
             pipeline = gst_pipeline_new("rtsp-kinesis-pipeline");
-            ret = gstreamer_rtsp_source_init(data, pipeline);
+            ret = gstreamer_rtsp_source_init(data, pipeline, string(argv[ENCODING_MODE_ARG_INDEX]));
             break;
         case FILE_SOURCE:
             LOG_INFO("Streaming from file source");
